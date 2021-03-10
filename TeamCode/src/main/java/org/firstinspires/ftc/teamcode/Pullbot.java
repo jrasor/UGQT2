@@ -532,6 +532,47 @@ public class Pullbot extends GenericFTCRobot {
     encoderDrive(speed, speed, inches, inches);
   }
 
+  public int DriveDistanceFastSigmoid (double distance) {
+    // Motors must RUN_USING_ENCODER.
+    // Start both motors at rest
+    // Error condition: distance > MAX_DRIVE_SPEED. If not, no room for middle
+    // segment. Todo: handle this.
+    double time;
+    runtime.reset();
+    double power = 1.0;
+    int Counts = 0;
+    //double powerScale = endSpeed - startSpeed;
+    // Sigmoid ramp 'em both up to max speed in 1.0 s. The average speed is
+    // half MAX_DRIVE_SPEED * 1s, or 11.82".
+    DriveDistanceSigmoid(0.0, 1.0, MAX_DRIVE_SPEED/2.0);
+    // Error condition: distance less than ramp distances (23.64"). There
+    // should be no middle segment in that case.
+    DriveDistanceSigmoid(1.0, 1.0, distance - MAX_DRIVE_SPEED);
+    // Sigmoid ramp 'em both down to rest, moving that same MAX_DRIVE_SPEED/2.0.
+    DriveDistanceSigmoid(1.0, 0.0, MAX_DRIVE_SPEED/2.0);
+
+    Counts = leftDrive.getCurrentPosition();
+    return Counts;
+  }
+
+  public double DriveDistanceSigmoid(double startSpeed, double endSpeed,
+                                     double distance) {
+    double time;
+    double speed;
+    double speedScale = endSpeed - startSpeed;
+    double averageSpeed = (startSpeed + endSpeed) / 2.0;
+    double time2DoIt = distance / (averageSpeed * MAX_DRIVE_SPEED);
+    runtime.reset();
+    do {
+      time = runtime.time();
+      speed =
+          startSpeed + speedScale * (0.5 - 0.5 * Math.cos(Math.PI * time / time2DoIt));
+      leftDrive.setPower(-speed);
+      rightDrive.setPower(-speed);
+    } while (time < time2DoIt);
+    return time;
+  }
+
   //   Turn on axis, as though with left and right tank drive joysticks in
   //   equal but opposite deflection.
   public void turnAngle(double speed, double angle) { // angle in radians

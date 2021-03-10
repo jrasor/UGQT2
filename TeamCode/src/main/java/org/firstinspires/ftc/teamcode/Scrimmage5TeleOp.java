@@ -87,21 +87,23 @@ public class Scrimmage5TeleOp extends LinearOpMode {
 
       // check all the trackable targets to see which one (if any) is visible.
       targetVisible = false;
-      try {for (VuforiaTrackable trackable : navigator.allTrackables) {
-        if (((VuforiaTrackableDefaultListener) trackable.getListener()).isVisible()) {
-          telemetry.addData("Visible Target", trackable.getName());
-          targetVisible = true;
-          OpenGLMatrix robotLocationTransform =
-              ((VuforiaTrackableDefaultListener) trackable.getListener()).getUpdatedRobotLocation();
-          if (robotLocationTransform != null) {
-            lastLocation = robotLocationTransform;
+      try {
+        for (VuforiaTrackable trackable : navigator.allTrackables) {
+          if (((VuforiaTrackableDefaultListener) trackable.getListener()).isVisible()) {
+            telemetry.addData("Visible Target", trackable.getName());
+            targetVisible = true;
+            OpenGLMatrix robotLocationTransform =
+                ((VuforiaTrackableDefaultListener) trackable.getListener()).getUpdatedRobotLocation();
+            if (robotLocationTransform != null) {
+              lastLocation = robotLocationTransform;
+            }
+            break;
           }
-          break;
         }
-      }} catch (Exception e) {
-        telemetry.addLine ("Failed to get a visible image: "
+      } catch (Exception e) {
+        telemetry.addLine("Failed to get a visible image: "
             + e.toString() + ". ");
-        sleep (2000);
+        sleep(2000);
         stop();
       }
 
@@ -118,7 +120,7 @@ public class Scrimmage5TeleOp extends LinearOpMode {
         Orientation rotation = Orientation.getOrientation(lastLocation,
             EXTRINSIC, XYZ, DEGREES);
         telemetry.addData("Rot (deg)", "{Roll, Pitch, Heading} = %.0f, %.0f, " +
-            "%.0f", rotation.firstAngle, rotation.secondAngle,
+                "%.0f", rotation.firstAngle, rotation.secondAngle,
             rotation.thirdAngle);
       } else {
         telemetry.addData("Visible Target", "none");
@@ -129,6 +131,14 @@ public class Scrimmage5TeleOp extends LinearOpMode {
           robot.colorSensor.red(), robot.colorSensor.green(),
           robot.colorSensor.blue());
       telemetry.update();
+
+      // Drive from Goal Zone to front Wall, in position to score Wobbler over
+      // it.
+      if (gamepad1.y) {
+        robot.setDriveRunMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.DriveDistanceFastSigmoid(96.0);
+        robot.setDriveRunMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+      }
     }
   }
 }
